@@ -168,7 +168,3 @@ dotnet add package Microsoft.Extensions.Logging.Abstractions
 - [架构设计](docs/ARCHITECTURE.md)
 - [部署指南](docs/DEPLOYMENT.md)
 - [用户手册](docs/USER_GUIDE.md)
-
-## 许可证
-
-内部使用 - 企业专用
