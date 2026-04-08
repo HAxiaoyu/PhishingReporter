@@ -17,6 +17,7 @@ namespace PhishingReporter.Infrastructure.Exchange
         public string Domain { get; set; } = string.Empty;
         public string ArchiveFolderName { get; set; } = "Phishing Reports";
         public string ArchiveMailbox { get; set; } = string.Empty;
+        public bool UseMockService { get; set; } = false;
     }
 
     /// <summary>

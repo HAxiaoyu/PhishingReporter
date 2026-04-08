@@ -21,6 +21,7 @@ namespace PhishingReporter.Infrastructure.Notification
         public string FromAddress { get; set; } = string.Empty;
         public string SecurityTeamEmail { get; set; } = string.Empty;
         public string TeamsWebhookUrl { get; set; } = string.Empty;
+        public bool UseMockService { get; set; } = false;
     }
 
     /// <summary>
