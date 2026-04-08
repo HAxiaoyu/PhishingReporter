@@ -1,6 +1,12 @@
 using Microsoft.Extensions.Logging;
 using PhishingReporter.Core.Interfaces;
 using PhishingReporter.Core.Models;
+using System.Threading;
+using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 
 namespace PhishingReporter.Core.Services
 {
@@ -32,11 +38,11 @@ namespace PhishingReporter.Core.Services
             _logger = logger;
         }
 
-        public async Task<AnalysisResult> AnalyzeAsync(PhishingReport report, CancellationToken cancellationToken)
+        public async Task<AnalysisOutcome> AnalyzeAsync(PhishingReport report, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Analyzing phishing report {ReportId}", report.Id);
 
-            var indicators = new List<RiskIndicator>();
+            var indicators = new List<AnalysisIndicator>();
             int riskScore = 0;
 
             // 1. 检查发件人域名
@@ -47,7 +53,7 @@ namespace PhishingReporter.Core.Services
                 {
                     if (senderDomain.Contains(suspiciousDomain, StringComparison.OrdinalIgnoreCase))
                     {
-                        indicators.Add(new RiskIndicator
+                        indicators.Add(new AnalysisIndicator
                         {
                             Type = "SuspiciousDomain",
                             Description = $"发件人使用可疑临时邮箱域名: {senderDomain}",
@@ -67,7 +73,7 @@ namespace PhishingReporter.Core.Services
                 {
                     if (report.Subject.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                     {
-                        indicators.Add(new RiskIndicator
+                        indicators.Add(new AnalysisIndicator
                         {
                             Type = "SuspiciousSubject",
                             Description = $"邮件主题包含可疑关键词: {keyword}",
@@ -89,7 +95,7 @@ namespace PhishingReporter.Core.Services
                     if (spf?.Contains("fail", StringComparison.OrdinalIgnoreCase) == true ||
                         spf?.Contains("softfail", StringComparison.OrdinalIgnoreCase) == true)
                     {
-                        indicators.Add(new RiskIndicator
+                        indicators.Add(new AnalysisIndicator
                         {
                             Type = "SPFCheck",
                             Description = "SPF 验证失败",
@@ -105,7 +111,7 @@ namespace PhishingReporter.Core.Services
                 {
                     if (authResults?.Contains("dmarc=fail", StringComparison.OrdinalIgnoreCase) == true)
                     {
-                        indicators.Add(new RiskIndicator
+                        indicators.Add(new AnalysisIndicator
                         {
                             Type = "DMARCCheck",
                             Description = "DMARC 验证失败",
@@ -128,7 +134,7 @@ namespace PhishingReporter.Core.Services
 
                     if (extension != null && dangerousExtensions.Contains(extension))
                     {
-                        indicators.Add(new RiskIndicator
+                        indicators.Add(new AnalysisIndicator
                         {
                             Type = "DangerousAttachment",
                             Description = $"危险类型的附件: {attachment.FileName}",
@@ -145,7 +151,7 @@ namespace PhishingReporter.Core.Services
             var urlCount = CountUrls(bodyPreview);
             if (urlCount > 3)
             {
-                indicators.Add(new RiskIndicator
+                indicators.Add(new AnalysisIndicator
                 {
                     Type = "MultipleUrls",
                     Description = $"邮件包含多个链接 ({urlCount} 个)",
@@ -173,7 +179,7 @@ namespace PhishingReporter.Core.Services
                 riskScore,
                 category);
 
-            return new AnalysisResult
+            return new AnalysisOutcome
             {
                 RiskScore = riskScore,
                 Category = category,

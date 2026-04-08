@@ -75,61 +75,64 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  padding: var(--spacing-md);
 }
 
 .login-card {
-  width: 400px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 360px;
+  padding: var(--spacing-lg);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .logo {
-  font-size: 48px;
+  font-size: 40px;
   display: block;
   margin-bottom: var(--spacing-sm);
 }
 
 .login-header h1 {
-  font-size: 20px;
-  margin-bottom: var(--spacing-xs);
+  font-size: 18px;
+  margin-bottom: 2px;
 }
 
 .login-header p {
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
   font-weight: 500;
+  font-size: 13px;
 }
 
 .error {
   color: var(--color-danger);
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
 }
 
 .login-footer {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
   border-top: 1px solid var(--color-border);
   text-align: center;
 }
 
 .login-footer p {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 11px;
 }
 </style>

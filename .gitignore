@@ -54,3 +54,7 @@ eml-storage/
 # Logs
 logs/
 *.log
+
+.claude
+
+*.db

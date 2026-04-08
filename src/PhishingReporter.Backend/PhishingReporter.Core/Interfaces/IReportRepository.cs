@@ -31,5 +31,15 @@ namespace PhishingReporter.Core.Interfaces
         /// 获取统计信息
         /// </summary>
         Task<ReportStatistics> GetStatisticsAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// 获取分类统计
+        /// </summary>
+        Task<Dictionary<string, int>> GetCategoryStatisticsAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// 获取近期上报趋势
+        /// </summary>
+        Task<List<DailyReportCount>> GetRecentTrendAsync(int days, CancellationToken cancellationToken);
     }
 }

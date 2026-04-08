@@ -82,7 +82,7 @@ namespace PhishingReporter.Infrastructure.Exchange
                 }
 
                 // 添加分类标记
-                emailMessage.Categories = new[] { "Phishing Report", $"Risk-{report.RiskScore}" };
+                emailMessage.Categories = new StringList(new[] { "Phishing Report", $"Risk-{report.RiskScore}" });
 
                 // 设置重要性
                 emailMessage.Importance = report.RiskScore >= 70 ? Importance.High : Importance.Normal;
@@ -126,7 +126,7 @@ namespace PhishingReporter.Infrastructure.Exchange
             if (_exchangeService != null)
                 return _exchangeService;
 
-            _exchangeService = new ExchangeService(ExchangeVersion.Exchange2016)
+            _exchangeService = new ExchangeService(ExchangeVersion.Exchange2013_SP1)
             {
                 Credentials = new WebCredentials(_settings.Username, _settings.Password, _settings.Domain)
             };
@@ -155,11 +155,11 @@ namespace PhishingReporter.Infrastructure.Exchange
             string folderName,
             CancellationToken cancellationToken)
         {
-            // 查找现有文件夹
+            // 查找现有文件夹 - EWS 使用同步方法
             var view = new FolderView(100);
             var filter = new SearchFilter.IsEqualTo(FolderSchema.DisplayName, folderName);
 
-            var searchResult = await service.FindFoldersAsync(
+            var searchResult = service.FindFolders(
                 WellKnownFolderName.MsgFolderRoot,
                 filter,
                 view
@@ -170,11 +170,11 @@ namespace PhishingReporter.Infrastructure.Exchange
                 return searchResult.Folders[0];
             }
 
-            // 创建新文件夹
+            // 创建新文件夹 - EWS 使用同步方法
             var newFolder = new Folder(service);
             newFolder.DisplayName = folderName;
             newFolder.FolderClass = "IPF.Note";
-            await newFolder.SaveAsync(WellKnownFolderName.MsgFolderRoot);
+            newFolder.Save(WellKnownFolderName.MsgFolderRoot);
 
             _logger.LogInformation("Created Exchange folder: {FolderName}", folderName);
 

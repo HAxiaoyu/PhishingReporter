@@ -2,6 +2,14 @@
 
 企业级钓鱼邮件上报系统，包含 Outlook Classic 插件和后端分析平台。
 
+## 系统截图
+
+| 仪表盘 | 上报列表 | 详情页 |
+|:---:|:---:|:---:|
+| ![仪表盘](assets/dashboard.png) | ![上报列表](assets/phishing_lists.png) | ![详情页](assets/phishing_details.png) |
+
+仪表盘展示统计数据和趋势，列表页支持筛选和分页，详情页可查看完整邮件源文件。
+
 ## 项目结构
 
 ```

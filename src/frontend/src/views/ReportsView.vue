@@ -197,39 +197,41 @@ onMounted(loadReports)
 
 <style scoped>
 .reports-page {
-  max-width: 1400px;
+  width: 100%;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .filters {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .filter-row {
   display: flex;
   gap: var(--spacing-md);
   flex-wrap: wrap;
+  align-items: flex-end;
 }
 
 .filter-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  min-width: 150px;
+  gap: 2px;
+  min-width: 140px;
 }
 
 .filter-item label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
@@ -246,7 +248,7 @@ onMounted(loadReports)
 }
 
 .subject {
-  max-width: 300px;
+  max-width: 250px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -254,29 +256,44 @@ onMounted(loadReports)
 
 .risk-score {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .page-info {
-  padding: 0 var(--spacing-md);
+  padding: 0 var(--spacing-sm);
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .error-message {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    width: 100%;
+  }
+
+  .subject {
+    max-width: 150px;
+  }
 }
 </style>

@@ -70,38 +70,41 @@ function handleLogout() {
 }
 
 .sidebar {
-  width: 240px;
+  width: 200px;
+  min-width: 200px;
   background: #1e293b;
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .sidebar.collapsed {
-  width: 60px;
+  width: 56px;
+  min-width: 56px;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .title {
   margin-left: var(--spacing-sm);
   font-weight: 600;
+  font-size: 14px;
   white-space: nowrap;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-sm) 0;
 }
 
 .nav-item {
@@ -111,6 +114,7 @@ function handleLogout() {
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .nav-item:hover {
@@ -124,8 +128,8 @@ function handleLogout() {
 }
 
 .icon {
-  font-size: 18px;
-  width: 24px;
+  font-size: 16px;
+  width: 20px;
   text-align: center;
 }
 
@@ -135,12 +139,13 @@ function handleLogout() {
 }
 
 .sidebar-footer {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -149,30 +154,47 @@ function handleLogout() {
 .header {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
 }
 
 .toggle-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: var(--color-bg);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  margin-right: var(--spacing-md);
+  margin-right: var(--spacing-sm);
+  font-size: 12px;
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .content {
   flex: 1;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(0);
+    width: 200px;
+  }
 }
 </style>

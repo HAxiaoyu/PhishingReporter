@@ -14,6 +14,14 @@ export interface PhishingReport {
   userNotes?: string
   attachments?: Attachment[]
   indicators?: AnalysisIndicator[]
+  headers?: EmailHeader[]
+  rawEmlBase64?: string
+  hasRawEmail?: boolean
+}
+
+export interface EmailHeader {
+  name?: string
+  value?: string
 }
 
 export interface Attachment {

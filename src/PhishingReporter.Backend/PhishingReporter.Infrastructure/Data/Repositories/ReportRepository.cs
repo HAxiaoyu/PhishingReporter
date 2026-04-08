@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PhishingReporter.Core.Interfaces;
 using PhishingReporter.Core.Models;
 using System.Text.Json;
@@ -49,7 +50,33 @@ namespace PhishingReporter.Infrastructure.Data.Repositories
                 report.CcRecipientsJson = JsonSerializer.Serialize(report.CcRecipients);
             }
 
-            _context.PhishingReports.Update(report);
+            // 更新主实体 - 只更新字段，不处理子实体（它们在AddAsync中已添加）
+            var existingEntry = _context.ChangeTracker.Entries<PhishingReport>()
+                .FirstOrDefault(e => e.Entity.Id == report.Id);
+
+            if (existingEntry != null)
+            {
+                existingEntry.CurrentValues.SetValues(report);
+                existingEntry.State = EntityState.Modified;
+            }
+            else
+            {
+                _context.PhishingReports.Attach(report);
+                _context.Entry(report).State = EntityState.Modified;
+            }
+
+            // 只添加新的分析结果（在初始添加时不存在）
+            foreach (var analysisResult in report.AnalysisResults)
+            {
+                var existingAnalysis = await _context.AnalysisResults
+                    .FirstOrDefaultAsync(a => a.Id == analysisResult.Id, cancellationToken);
+
+                if (existingAnalysis == null)
+                {
+                    _context.AnalysisResults.Add(analysisResult);
+                }
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Updated phishing report {ReportId}", report.Id);
@@ -134,6 +161,45 @@ namespace PhishingReporter.Infrastructure.Data.Repositories
             stats.ResolvedReports = await _context.PhishingReports.CountAsync(r => r.Status == "Resolved", cancellationToken);
 
             return stats;
+        }
+
+        public async Task<Dictionary<string, int>> GetCategoryStatisticsAsync(CancellationToken cancellationToken)
+        {
+            var result = await _context.PhishingReports
+                .Where(r => r.Category != null && r.Category != "")
+                .GroupBy(r => r.Category!)
+                .Select(g => new { Category = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Category, x => x.Count, cancellationToken);
+
+            return result;
+        }
+
+        public async Task<List<DailyReportCount>> GetRecentTrendAsync(int days, CancellationToken cancellationToken)
+        {
+            var startDate = DateTime.UtcNow.Date.AddDays(-days + 1);
+
+            var result = await _context.PhishingReports
+                .Where(r => r.ReportedAt >= startDate)
+                .GroupBy(r => r.ReportedAt.Date)
+                .Select(g => new DailyReportCount { Date = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Date)
+                .ToListAsync(cancellationToken);
+
+            // 填充没有数据的天数
+            var allDates = Enumerable.Range(0, days)
+                .Select(offset => startDate.AddDays(offset))
+                .ToList();
+
+            var fullTrend = allDates
+                .GroupJoin(result, d => d.Date, r => r.Date, (date, reports) => new DailyReportCount
+                {
+                    Date = date,
+                    Count = reports.Sum(r => r.Count)
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            return fullTrend;
         }
     }
 }

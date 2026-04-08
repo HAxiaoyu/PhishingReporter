@@ -50,6 +50,21 @@ namespace PhishingReporter.Core.Models
         public string? UserNotes { get; init; }
         public List<AttachmentInfo>? Attachments { get; init; }
         public List<AnalysisIndicator>? Indicators { get; init; }
+        /// <summary>邮件头信息</summary>
+        public List<EmailHeaderInfo>? Headers { get; init; }
+        /// <summary>原始邮件内容（EML格式，Base64编码）</summary>
+        public string? RawEmlBase64 { get; init; }
+        /// <summary>是否有原始邮件文件</summary>
+        public bool HasRawEmail { get; init; }
+    }
+
+    /// <summary>
+    /// 邮件头信息
+    /// </summary>
+    public record EmailHeaderInfo
+    {
+        public string? Name { get; init; }
+        public string? Value { get; init; }
     }
 
     /// <summary>
@@ -97,6 +112,7 @@ namespace PhishingReporter.Core.Models
         public string Type { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;
         public int Severity { get; init; }
+        public string? Details { get; init; }
     }
 
     /// <summary>

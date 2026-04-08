@@ -124,33 +124,50 @@ onMounted(loadStatistics)
 
 <style scoped>
 .dashboard {
-  max-width: 1200px;
+  width: 100%;
 }
 
 .page-title {
-  font-size: 24px;
-  margin-bottom: var(--spacing-lg);
+  font-size: 20px;
+  margin-bottom: var(--spacing-md);
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
 }
 
 .stat-icon {
-  font-size: 32px;
+  font-size: 28px;
+}
+
+.stat-content {
+  flex: 1;
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
 }
 
@@ -164,33 +181,44 @@ onMounted(loadStatistics)
 
 .stat-label {
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  padding: var(--spacing-md);
 }
 
 .chart-card h3 {
-  margin-bottom: var(--spacing-md);
-  font-size: 16px;
+  margin-bottom: var(--spacing-sm);
+  font-size: 15px;
 }
 
 .status-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 4px;
 }
 
 .status-item {
   display: flex;
   justify-content: space-between;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--color-bg);
   border-radius: var(--radius-sm);
+  font-size: 13px;
 }
 
 .status-label {
@@ -204,14 +232,14 @@ onMounted(loadStatistics)
 .trend-chart {
   display: flex;
   align-items: flex-end;
-  gap: var(--spacing-xs);
-  height: 120px;
-  padding-top: var(--spacing-md);
+  gap: 2px;
+  height: 100px;
+  padding-top: var(--spacing-sm);
 }
 
 .trend-bar {
   flex: 1;
-  min-width: 20px;
+  min-width: 16px;
   background: var(--color-primary);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   position: relative;
@@ -225,7 +253,7 @@ onMounted(loadStatistics)
 
 .trend-value {
   position: absolute;
-  top: -20px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 10px;
@@ -234,7 +262,7 @@ onMounted(loadStatistics)
 
 .error-message {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   color: var(--color-danger);
 }
 </style>

@@ -99,6 +99,9 @@ namespace PhishingReporter.Core.Models
         public List<string> ToRecipients { get; set; } = new();
         [NotMapped]
         public List<string> CcRecipients { get; set; } = new();
+        /// <summary>原始邮件内容（仅用于种子数据，不映射到数据库）</summary>
+        [NotMapped]
+        public string? RawEmlContent { get; set; }
     }
 
     /// <summary>

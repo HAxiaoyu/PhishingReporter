@@ -31,6 +31,11 @@ namespace PhishingReporter.Core.Interfaces
         /// 获取统计信息
         /// </summary>
         Task<StatisticsResponse> GetStatisticsAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// 获取原始邮件内容
+        /// </summary>
+        Task<RawEmailResult?> GetRawEmailAsync(Guid id, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -42,5 +47,15 @@ namespace PhishingReporter.Core.Interfaces
         public Guid? ReportId { get; init; }
         public string? ErrorMessage { get; init; }
         public string? ErrorCode { get; init; }
+    }
+
+    /// <summary>
+    /// 原始邮件获取结果
+    /// </summary>
+    public record RawEmailResult
+    {
+        public bool Success { get; init; }
+        public string? EmlContentBase64 { get; init; }
+        public string? ErrorMessage { get; init; }
     }
 }

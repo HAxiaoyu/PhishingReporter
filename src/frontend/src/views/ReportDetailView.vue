@@ -12,6 +12,7 @@ const report = ref<PhishingReport | null>(null)
 const isLoading = ref(true)
 const error = ref('')
 const isUpdating = ref(false)
+const showRawEmail = ref(false)
 
 const statusOptions: ReportStatus[] = [
   'Pending',
@@ -75,6 +76,41 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+function decodeBase64(base64: string): string {
+  try {
+    return atob(base64)
+  } catch {
+    return base64
+  }
+}
+
+function getRawEmailContent(): string {
+  if (!report.value?.rawEmlBase64) return ''
+  return decodeBase64(report.value.rawEmlBase64)
+}
+
+function downloadEml() {
+  if (!report.value?.rawEmlBase64) return
+
+  const content = decodeBase64(report.value.rawEmlBase64)
+  const blob = new Blob([content], { type: 'message/rfc822' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `report-${report.value.id}.eml`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function copyToClipboard() {
+  const content = getRawEmailContent()
+  navigator.clipboard.writeText(content).then(() => {
+    alert('已复制到剪贴板')
+  }).catch(() => {
+    alert('复制失败')
+  })
+}
+
 onMounted(loadReport)
 </script>
 
@@ -102,7 +138,7 @@ onMounted(loadReport)
           <div class="info-grid">
             <div class="info-item">
               <span class="label">报告 ID</span>
-              <span class="value">{{ report.id }}</span>
+              <span class="value mono">{{ report.id }}</span>
             </div>
             <div class="info-item">
               <span class="label">上报时间</span>
@@ -156,23 +192,40 @@ onMounted(loadReport)
           </div>
         </div>
 
+        <!-- 邮件头 -->
+        <div class="card full-width" v-if="report.headers?.length">
+          <h3>邮件头 ({{ report.headers.length }})</h3>
+          <div class="headers-table">
+            <div
+              v-for="(header, index) in report.headers"
+              :key="index"
+              class="header-row"
+            >
+              <span class="header-name">{{ header.name || '-' }}</span>
+              <span class="header-value">{{ header.value || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 分析指标 -->
         <div class="card" v-if="report.indicators?.length">
-          <h3>分析指标</h3>
+          <h3>分析指标 ({{ report.indicators.length }})</h3>
           <div class="indicators-list">
             <div
               v-for="(indicator, index) in report.indicators"
               :key="index"
               class="indicator-item"
             >
-              <span class="indicator-type">{{ indicator.type }}</span>
+              <div class="indicator-header">
+                <span class="indicator-type">{{ indicator.type }}</span>
+                <span
+                  class="indicator-severity"
+                  :class="'severity-' + indicator.severity"
+                >
+                  严重程度: {{ indicator.severity }}/5
+                </span>
+              </div>
               <span class="indicator-desc">{{ indicator.description }}</span>
-              <span
-                class="indicator-severity"
-                :class="'severity-' + indicator.severity"
-              >
-                严重程度: {{ indicator.severity }}/5
-              </span>
             </div>
           </div>
         </div>
@@ -198,6 +251,31 @@ onMounted(loadReport)
           </div>
         </div>
 
+        <!-- 原始邮件源文件 -->
+        <div class="card full-width" v-if="report.hasRawEmail || report.rawEmlBase64">
+          <div class="section-header">
+            <h3>邮件源文件 (MIME)</h3>
+            <div class="section-actions">
+              <button class="btn btn-outline btn-sm" @click="showRawEmail = !showRawEmail">
+                {{ showRawEmail ? '收起' : '展开' }}
+              </button>
+              <button class="btn btn-primary btn-sm" @click="downloadEml" v-if="report.rawEmlBase64">
+                下载 .eml
+              </button>
+              <button class="btn btn-outline btn-sm" @click="copyToClipboard" v-if="report.rawEmlBase64 && showRawEmail">
+                复制
+              </button>
+            </div>
+          </div>
+
+          <div v-if="showRawEmail && report.rawEmlBase64" class="raw-email-container">
+            <pre class="raw-email-content">{{ getRawEmailContent() }}</pre>
+          </div>
+          <div v-else-if="!report.rawEmlBase64" class="no-content">
+            暂无原始邮件文件
+          </div>
+        </div>
+
         <!-- 状态更新 -->
         <div class="card">
           <h3>更新状态</h3>
@@ -215,7 +293,7 @@ onMounted(loadReport)
               <label>备注（可选）</label>
               <textarea
                 v-model="notes"
-                class="input textarea"
+                class="textarea"
                 placeholder="添加处理备注..."
                 rows="3"
               ></textarea>
@@ -237,42 +315,57 @@ onMounted(loadReport)
 
 <style scoped>
 .detail-page {
-  max-width: 1200px;
+  width: 100%;
 }
 
 .page-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.full-width {
+  /* 所有卡片默认占满宽度，此类名保留以兼容 */
+}
+
+.info-card {
+  padding: var(--spacing-md);
 }
 
 .info-card h3 {
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
   border-bottom: 1px solid var(--color-border);
+  font-size: 15px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 500px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 2px;
 }
 
 .info-item.full {
@@ -280,82 +373,125 @@ onMounted(loadReport)
 }
 
 .info-item .label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
 .info-item .value {
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.info-item .value.mono {
+  font-family: monospace;
+  font-size: 12px;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   width: fit-content;
 }
 
 .risk-score {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
   color: white;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
 }
 
+/* 邮件头表格 */
+.headers-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.header-name {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.header-value {
+  word-break: break-all;
+  color: var(--color-text);
+}
+
+/* 分析指标 */
 .indicators-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 4px;
 }
 
 .indicator-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 2px;
   padding: var(--spacing-sm);
   background: var(--color-bg);
   border-radius: var(--radius-sm);
 }
 
+.indicator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .indicator-type {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .indicator-desc {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
 .indicator-severity {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .severity-5, .severity-4 { color: var(--color-danger); }
 .severity-3, .severity-2 { color: var(--color-warning); }
 .severity-1 { color: var(--color-success); }
 
+/* 附件 */
 .attachments-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 4px;
 }
 
 .attachment-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--color-bg);
   border-radius: var(--radius-sm);
 }
 
 .attachment-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .attachment-info {
@@ -365,10 +501,11 @@ onMounted(loadReport)
 
 .attachment-name {
   font-weight: 500;
+  font-size: 13px;
 }
 
 .attachment-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
@@ -377,31 +514,87 @@ onMounted(loadReport)
   margin-left: var(--spacing-sm);
 }
 
+/* 区块头部 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.section-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* 原始邮件 */
+.raw-email-container {
+  background: #1e1e1e;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.raw-email-content {
+  margin: 0;
+  padding: var(--spacing-sm);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.no-content {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* 表单 */
 .update-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 2px;
 }
 
 .form-group label {
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .textarea {
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
   resize: vertical;
-  min-height: 80px;
+  min-height: 60px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .error-message {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
   color: var(--color-danger);
 }
 </style>

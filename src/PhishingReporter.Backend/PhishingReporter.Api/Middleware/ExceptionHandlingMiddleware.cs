@@ -34,57 +34,28 @@ namespace PhishingReporter.Api.Middleware
         {
             context.Response.ContentType = "application/json";
 
-            var response = new ErrorResponse();
-            var statusCode = HttpStatusCode.InternalServerError;
-
-            switch (exception)
-            {
-                case ArgumentException argEx:
-                    statusCode = HttpStatusCode.BadRequest;
-                    response.Error = argEx.Message;
-                    response.Code = "ARGUMENT_ERROR";
-                    break;
-
-                case InvalidOperationException opEx:
-                    statusCode = HttpStatusCode.BadRequest;
-                    response.Error = opEx.Message;
-                    response.Code = "OPERATION_ERROR";
-                    break;
-
-                case UnauthorizedAccessException:
-                    statusCode = HttpStatusCode.Unauthorized;
-                    response.Error = "Unauthorized access";
-                    response.Code = "UNAUTHORIZED";
-                    break;
-
-                case TimeoutException:
-                    statusCode = HttpStatusCode.RequestTimeout;
-                    response.Error = "Request timed out";
-                    response.Code = "TIMEOUT";
-                    break;
-
-                default:
-                    statusCode = HttpStatusCode.InternalServerError;
-                    response.Error = "An internal server error occurred";
-                    response.Code = "INTERNAL_ERROR";
-                    break;
-            }
-
+            var (statusCode, error, code) = GetErrorDetails(exception);
             context.Response.StatusCode = (int)statusCode;
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+            var response = new ErrorResponse(error, code);
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
         }
 
-        private record ErrorResponse
+        private static (HttpStatusCode statusCode, string error, string code) GetErrorDetails(Exception exception)
         {
-            public string Error { get; init; } = string.Empty;
-            public string Code { get; init; } = string.Empty;
+            return exception switch
+            {
+                ArgumentException argEx => (HttpStatusCode.BadRequest, argEx.Message, "ARGUMENT_ERROR"),
+                InvalidOperationException opEx => (HttpStatusCode.BadRequest, opEx.Message, "OPERATION_ERROR"),
+                UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access", "UNAUTHORIZED"),
+                TimeoutException => (HttpStatusCode.RequestTimeout, "Request timed out", "TIMEOUT"),
+                _ => (HttpStatusCode.InternalServerError, "An internal server error occurred", "INTERNAL_ERROR")
+            };
         }
+
+        private record ErrorResponse(string Error, string Code);
     }
 
     /// <summary>

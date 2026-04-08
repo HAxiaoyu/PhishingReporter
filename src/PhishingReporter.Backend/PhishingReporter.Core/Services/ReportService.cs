@@ -123,27 +123,7 @@ namespace PhishingReporter.Core.Services
                     report.Id,
                     report.SenderEmail);
 
-                // 6. 存档到 Exchange（异步，不阻塞）
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var archiveResult = await _archiveService.ArchiveEmailAsync(report, CancellationToken.None);
-
-                        if (archiveResult.Success)
-                        {
-                            report.ArchivedMessageId = archiveResult.ArchivedId;
-                            await _reportRepository.UpdateAsync(report, CancellationToken.None);
-                            _logger.LogInformation("Archived email for report {ReportId}", report.Id);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to archive email for report {ReportId}", report.Id);
-                    }
-                }, CancellationToken.None);
-
-                // 7. 运行分析
+                // 6. 运行分析
                 try
                 {
                     var analysisResult = await _analysisService.AnalyzeAsync(report, cancellationToken);
@@ -172,7 +152,21 @@ namespace PhishingReporter.Core.Services
                 {
                     _logger.LogError(ex, "Analysis failed for report {ReportId}", report.Id);
                     report.Status = "AnalysisFailed";
-                    await _reportRepository.UpdateAsync(report, CancellationToken.None);
+                }
+
+                // 7. 存档到 Exchange（在分析之后）
+                try
+                {
+                    var archiveResult = await _archiveService.ArchiveEmailAsync(report, cancellationToken);
+                    if (archiveResult.Success)
+                    {
+                        report.ArchivedMessageId = archiveResult.ArchivedId;
+                        _logger.LogInformation("Archived email for report {ReportId}", report.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to archive email for report {ReportId}", report.Id);
                 }
 
                 // 8. 发送通知（异步，不阻塞）
@@ -213,6 +207,17 @@ namespace PhishingReporter.Core.Services
             if (report == null)
                 return null;
 
+            // 尝试获取原始邮件内容
+            string? rawEmlBase64 = null;
+            if (!string.IsNullOrEmpty(report.EmlFilePath))
+            {
+                var emlBytes = await _fileStorage.GetEmlAsync(report.EmlFilePath, cancellationToken);
+                if (emlBytes != null)
+                {
+                    rawEmlBase64 = Convert.ToBase64String(emlBytes);
+                }
+            }
+
             return new ReportDetailResponse
             {
                 Id = report.Id,
@@ -233,7 +238,14 @@ namespace PhishingReporter.Core.Services
                     Sha256Hash = a.FileHash,
                     IsMalicious = a.IsMalicious
                 }).ToList(),
-                Indicators = GetIndicatorsFromAnalysis(report)
+                Indicators = GetIndicatorsFromAnalysis(report),
+                Headers = report.Headers?.Select(h => new EmailHeaderInfo
+                {
+                    Name = h.HeaderName,
+                    Value = h.HeaderValue
+                }).ToList(),
+                RawEmlBase64 = rawEmlBase64,
+                HasRawEmail = !string.IsNullOrEmpty(report.EmlFilePath)
             };
         }
 
@@ -304,6 +316,12 @@ namespace PhishingReporter.Core.Services
         {
             var stats = await _reportRepository.GetStatisticsAsync(cancellationToken);
 
+            // 获取分类分布
+            var categoryStats = await _reportRepository.GetCategoryStatisticsAsync(cancellationToken);
+
+            // 获取近期趋势（最近7天）
+            var trend = await _reportRepository.GetRecentTrendAsync(7, cancellationToken);
+
             return new StatisticsResponse
             {
                 TotalReports = stats.TotalReports,
@@ -317,7 +335,9 @@ namespace PhishingReporter.Core.Services
                     ["Confirmed"] = stats.ConfirmedReports,
                     ["FalsePositive"] = stats.FalsePositiveReports,
                     ["Resolved"] = stats.ResolvedReports
-                }
+                },
+                ReportsByCategory = categoryStats,
+                RecentTrend = trend
             };
         }
 
@@ -338,6 +358,40 @@ namespace PhishingReporter.Core.Services
             {
                 return null;
             }
+        }
+
+        public async Task<RawEmailResult?> GetRawEmailAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var report = await _reportRepository.GetByIdAsync(id, cancellationToken);
+
+            if (report == null)
+                return null;
+
+            if (string.IsNullOrEmpty(report.EmlFilePath))
+            {
+                return new RawEmailResult
+                {
+                    Success = false,
+                    ErrorMessage = "No raw email file available for this report"
+                };
+            }
+
+            var emlBytes = await _fileStorage.GetEmlAsync(report.EmlFilePath, cancellationToken);
+
+            if (emlBytes == null)
+            {
+                return new RawEmailResult
+                {
+                    Success = false,
+                    ErrorMessage = "Raw email file not found"
+                };
+            }
+
+            return new RawEmailResult
+            {
+                Success = true,
+                EmlContentBase64 = Convert.ToBase64String(emlBytes)
+            };
         }
     }
 }
